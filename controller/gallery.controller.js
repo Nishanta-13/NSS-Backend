@@ -1,3 +1,4 @@
+
 const receiveInstagramPost = (req, res) => {
   try {
 
@@ -72,3 +73,4 @@ const receiveInstagramPost = (req, res) => {
     return res.status(500).json({ error: "Failed to process Instagram post" });
   }
 };
+export default receiveInstagramPost;
