@@ -44,7 +44,7 @@ const receiveInstagramPost = (req, res) => {
     );
 
     if (!isAllowed) {
-      console.log("❌ Ignored post:", caption);
+      console.log(" Ignored post:", caption);
       return res.status(200).json({
         message: "Post ignored (hashtag filter)"
       });
@@ -61,7 +61,7 @@ const receiveInstagramPost = (req, res) => {
       type: media_type || "UNKNOWN"
     };
 
-    console.log("✅ Saved Instagram Post:", newPost);
+    console.log(" Saved Instagram Post:", newPost);
 
     return res.status(200).json({
       message: "Instagram Post received successfully",
