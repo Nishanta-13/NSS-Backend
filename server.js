@@ -4,6 +4,8 @@ import cors from 'cors';
 import mailRoutes from './Routes/mail.routes.js';
 import galleryRouter from './Routes/gallery.routes.js';
 dotenv.config();
+import eventRoutes from './Routes/dbtogall.routes.js';
+import mongoose, { mongo } from "mongoose";
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -26,6 +28,7 @@ app.use(express.json());
 
 app.use('/api/mail', mailRoutes);
 app.use('/api/gallery', galleryRouter);
+app.use('/api/events', eventRoutes);
 
 app.get('/', (req, res) => {
     res.send('NSS Website Backend is running');
@@ -34,3 +37,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+mongoose.connect(process.env.MONGO_URI).then(() => console.log("Connected to MongoDB")).catch((err) => console.error("MongoDB connection error:", err));
