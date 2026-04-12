@@ -49,18 +49,30 @@ const receiveInstagramPost = (req, res) => {
         message: "Post ignored (hashtag filter)"
       });
     }
+    const getEventType = (caption) => {
+      if (!caption) return "Instagram";
 
-    const newPost = {
-      id: Date.now(),
-      image: media_type === "VIDEO"
-        ? (thumbnail_url || media_url)
-        : media_url,
-      caption: caption || "",
-      link: permalink || null,
-      timestamp: timestamp || new Date().toISOString(),
-      type: media_type || "UNKNOWN"
+      if (caption.includes("donation")) return "Donation drive";
+      if (caption.includes("awareness")) return "Awareness";
+      if (caption.includes("clean")) return "Cleanliness Drive";
+
+      return "Instagram";
     };
 
+    const newPost = {
+      title: caption || "Instagram Event",
+      content: caption || "",
+      imgUrl: media_type === "VIDEO"
+        ? thumbnail_url
+        : media_url,
+      year: new Date(timestamp).getFullYear(),
+      date: new Date(timestamp).toLocaleString("en-US", {
+        month: "long",
+        year: "numeric"
+      }),
+      event_type: getEventType(caption.toLowerCase()),
+      instagramUrl: permalink
+    };
     console.log(" Saved Instagram Post:", newPost);
 
     return res.status(200).json({
