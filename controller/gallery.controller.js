@@ -1,5 +1,6 @@
+import Event from "../model/posts.model.js";
 
-const receiveInstagramPost = (req, res) => {
+const receiveInstagramPost = async (req, res) => {
   try {
 
     if (req.method === "GET") {
@@ -9,17 +10,15 @@ const receiveInstagramPost = (req, res) => {
     }
 
     const body = req.body;
+
     if (!body || Object.keys(body).length === 0) {
-      console.warn("Empty request body", { headers: req.headers });
       return res.status(400).json({ error: "Empty request body" });
     }
 
     let payload = body;
-    if (body.entry && Array.isArray(body.entry) && body.entry.length) {
-      const entry = body.entry[0];
-      const change = entry.changes && entry.changes[0];
-      if (change && change.value) payload = change.value;
-      else if (entry.messaging && entry.messaging[0]) payload = entry.messaging[0];
+
+    if (body.entry?.length) {
+      payload = body.entry[0]?.changes?.[0]?.value || payload;
     } else if (body.data) {
       payload = body.data;
     }
@@ -33,10 +32,10 @@ const receiveInstagramPost = (req, res) => {
       media_type
     } = payload || {};
 
-    if (!media_url && !thumbnail_url && !permalink) {
-      console.warn("No media data", payload);
-      return res.status(400).json({ error: "No media data in payload" });
+    if (!media_url && !thumbnail_url) {
+      return res.status(400).json({ error: "No media data" });
     }
+
     const allowedHashtags = ["#NSS", "#SiteFlow", "#Event"];
 
     const isAllowed = allowedHashtags.some(tag =>
@@ -44,13 +43,16 @@ const receiveInstagramPost = (req, res) => {
     );
 
     if (!isAllowed) {
-      console.log(" Ignored post:", caption);
+      console.log("Ignored post:", caption);
       return res.status(200).json({
         message: "Post ignored (hashtag filter)"
       });
     }
+
     const getEventType = (caption) => {
       if (!caption) return "Instagram";
+
+      caption = caption.toLowerCase();
 
       if (caption.includes("donation")) return "Donation drive";
       if (caption.includes("awareness")) return "Awareness";
@@ -59,7 +61,7 @@ const receiveInstagramPost = (req, res) => {
       return "Instagram";
     };
 
-    const newPost = {
+    const newPost = new Event({
       title: caption || "Instagram Event",
       content: caption || "",
       imgUrl: media_type === "VIDEO"
@@ -70,13 +72,16 @@ const receiveInstagramPost = (req, res) => {
         month: "long",
         year: "numeric"
       }),
-      event_type: getEventType(caption.toLowerCase()),
+      event_type: getEventType(caption),
       instagramUrl: permalink
-    };
-    console.log(" Saved Instagram Post:", newPost);
+    });
+
+    await newPost.save();
+
+    console.log("Saved to DB:", newPost);
 
     return res.status(200).json({
-      message: "Instagram Post received successfully",
+      message: "Instagram Post saved successfully",
       post: newPost
     });
 
@@ -85,4 +90,5 @@ const receiveInstagramPost = (req, res) => {
     return res.status(500).json({ error: "Failed to process Instagram post" });
   }
 };
+
 export default receiveInstagramPost;
