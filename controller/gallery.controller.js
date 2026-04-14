@@ -2,10 +2,12 @@ import Event from "../model/posts.model.js";
 
 const receiveInstagramPost = async (req, res) => {
   try {
-
     if (req.method === "GET") {
-      const challenge = req.query?.["hub.challenge"] || req.query?.hub_challenge;
+      const challenge =
+        req.query?.["hub.challenge"] || req.query?.hub_challenge;
+
       if (challenge) return res.status(200).send(challenge);
+
       return res.status(400).send("No challenge provided");
     }
 
@@ -14,7 +16,6 @@ const receiveInstagramPost = async (req, res) => {
     if (!body || Object.keys(body).length === 0) {
       return res.status(400).json({ error: "Empty request body" });
     }
-
     let payload = body;
 
     if (body.entry?.length) {
@@ -36,10 +37,12 @@ const receiveInstagramPost = async (req, res) => {
       return res.status(400).json({ error: "No media data" });
     }
 
-    const allowedHashtags = ["#NSS", "#SiteFlow", "#Event"];
+    const allowedHashtags = ["#NSS", "#Event"];
+
+    const captionText = caption?.toLowerCase() || "";
 
     const isAllowed = allowedHashtags.some(tag =>
-      caption?.toLowerCase().includes(tag.toLowerCase())
+      captionText.includes(tag.toLowerCase())
     );
 
     if (!isAllowed) {
@@ -49,26 +52,43 @@ const receiveInstagramPost = async (req, res) => {
       });
     }
 
+    const existingPost = await Event.findOne({
+      instagramUrl: permalink
+    });
+
+    if (existingPost) {
+      console.log("Duplicate post ignored");
+      return res.status(200).json({
+        message: "Duplicate post ignored"
+      });
+    }
+
     const getEventType = (caption) => {
       if (!caption) return "Instagram";
 
-      caption = caption.toLowerCase();
+      const text = caption.toLowerCase();
 
-      if (caption.includes("donation")) return "Donation drive";
-      if (caption.includes("awareness")) return "Awareness";
-      if (caption.includes("clean")) return "Cleanliness Drive";
+      if (text.includes("donation")) return "Donation drive";
+      if (text.includes("awareness")) return "Awareness";
+      if (text.includes("clean")) return "Cleanliness Drive";
 
       return "Instagram";
     };
 
+
+    const postDate = timestamp ? new Date(timestamp) : new Date();
+
+    let imageUrl = thumbnail_url || media_url;
+
+    if (media_type === "CAROUSEL_ALBUM") {
+      imageUrl = media_url; 
+    }
     const newPost = new Event({
       title: caption || "Instagram Event",
       content: caption || "",
-      imgUrl: media_type === "VIDEO"
-        ? thumbnail_url
-        : media_url,
-      year: new Date(timestamp).getFullYear(),
-      date: new Date(timestamp).toLocaleString("en-US", {
+      imgUrl: imageUrl,
+      year: postDate.getFullYear(),
+      date: postDate.toLocaleString("en-US", {
         month: "long",
         year: "numeric"
       }),
@@ -87,7 +107,10 @@ const receiveInstagramPost = async (req, res) => {
 
   } catch (error) {
     console.error("Error:", error);
-    return res.status(500).json({ error: "Failed to process Instagram post" });
+
+    return res.status(500).json({
+      error: "Failed to process Instagram post"
+    });
   }
 };
 
