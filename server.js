@@ -10,7 +10,7 @@ import mongoose, { mongo } from "mongoose";
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000").split(',');
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000" ).split(',');
 
 app.use(cors({
   origin: (origin, callback) => {
